@@ -13,24 +13,27 @@
 
 #define DBG 1
 
-void findIBDevices(struct ibv_device ***deviceList, int *numDevices);
-
+int findIBDevices(struct ibv_device ***deviceList, int *numDevices);
 // Only ** because we don't want the print function to modify this! (pass-by-value)
 int printIBDevicesList(struct ibv_device **deviceList, int numDevices);
 
-int openDevices(struct ibv_device **deviceList, int numDevices);	
+int openDevices(struct ibv_device **deviceList, int numDevices, struct ibv_context ***contexts);	
+
+int getDeviceAttributes(struct ibv_device **deviceList, int numDevices, struct ibv_context **contexts);
 
 int main (int argc, char *argv[]) {
 
-	int numDevices = 0;
+	int numDevices = 0, returnValue = 0;
 	struct ibv_device **deviceList = NULL; 
+	struct ibv_context **contexts = NULL;
 	
 	// Ensure devices returned safely
-	findIBDevices(&deviceList, &numDevices);
+	returnValue = findIBDevices(&deviceList, &numDevices);
 	// Print list of devices
-	printIBDevicesList(deviceList, numDevices);
-
-	openDevices(deviceList, numDevices);	
+	returnValue = printIBDevicesList(deviceList, numDevices);
+	// Open devices and get contexts
+	returnValue = openDevices(deviceList, numDevices, &contexts);	
+	// Print some attributes of interest of opened devices 
 
 
 	goto free_device_list;	
@@ -38,12 +41,10 @@ int main (int argc, char *argv[]) {
 free_device_list:	
 	ibv_free_device_list(deviceList);
 
-
-
-	return 0; // exit is a system call... just return cleanly...
+	return returnValue; // exit is a system call... just return cleanly...
 }
 
-void findIBDevices(struct ibv_device ***deviceList, int *numDevices) {
+int findIBDevices(struct ibv_device ***deviceList, int *numDevices) {
 	*deviceList = ibv_get_device_list(numDevices);
 	printf("%d devices found\nThey are:\n=====\n", *numDevices);
 
@@ -62,6 +63,7 @@ void findIBDevices(struct ibv_device ***deviceList, int *numDevices) {
 		assert (deviceList != NULL);
 		perror("Device List Obtained");
 	}
+	return 0;
 }
 
 int printIBDevicesList(struct ibv_device **deviceList, int numDevices) {
@@ -81,9 +83,10 @@ int printIBDevicesList(struct ibv_device **deviceList, int numDevices) {
 	return 0;	
 }
 
-int openDevices(struct ibv_device **deviceList, int numDevices) {
+int openDevices(struct ibv_device **deviceList, int numDevices, struct ibv_context ***contexts) {
 
-	int returnVal = 0;
+	*contexts = malloc(numDevices * sizeof(struct ibv_device *));
+
 	for (int i = 0; i < numDevices; i++) {
 		struct ibv_device * device = deviceList[i];
 		struct ibv_context *context = ibv_open_device(device);
@@ -95,11 +98,20 @@ int openDevices(struct ibv_device **deviceList, int numDevices) {
 				exit(EXIT_FAILURE); // Exit
 			}
 		}
-		struct ibv_device_attr deviceAttr;
-		returnVal = ibv_query_device(context, &deviceAttr);
-
+		(*contexts)[i] = context;
 	}
-	return returnVal;
+	return 0;
 }
 
+int getDeviceAttributes(struct ibv_device **deviceList, int numDevices, 
+		struct ibv_context **contexts){
+
+	for (int i = 0; i < numDevices; i++) {
+		struct ibv_device_attr deviceAttr;
+		ibv_query_device(contexts[i], &deviceAttr);
+	}
+	// It expects a created deviceAttr to modify rather than a 
+	// reference to a pointer that it can stick a created object on
+	return 0;
+}
 
