@@ -19,13 +19,20 @@ int printIBDevicesList(struct ibv_device **deviceList, int numDevices);
 
 int openDevices(struct ibv_device **deviceList, int numDevices, struct ibv_context ***contexts);	
 
+int closeDevices(struct ibv_context ***contexts, int numDevices);
+
 int getDeviceAttributes(struct ibv_device **deviceList, int numDevices, struct ibv_context **contexts);
+
+int allocateProtectionDomains(struct ibv_context **contexts, struct ibv_pd ***pds, int numDevices);
+
+int deallocateProtectionDomains(struct ibv_pd ***pds, int numDevices);
 
 int main (int argc, char *argv[]) {
 
 	int numDevices = 0, returnValue = 0;
 	struct ibv_device **deviceList = NULL; 
 	struct ibv_context **contexts = NULL;
+	struct ibv_pd **pds = NULL;
 	
 	// Ensure devices returned safely
 	returnValue = findIBDevices(&deviceList, &numDevices);
@@ -33,12 +40,19 @@ int main (int argc, char *argv[]) {
 	returnValue = printIBDevicesList(deviceList, numDevices);
 	// Open devices and get contexts
 	returnValue = openDevices(deviceList, numDevices, &contexts);	
-	// Print some attributes of interest of opened devices 
-
-
-	goto free_device_list;	
+	// Get attributes of opened device contexts, print what is useful 
+	returnValue = getDeviceAttributes(deviceList, numDevices, contexts);
+	// Allocate Protection Domain - so resources don't overlap 
+	returnValue = allocateProtectionDomains(contexts, &pds, numDevices);
+	// Deallocate Protection Domains 
+	returnValue = deallocateProtectionDomains(&pds, numDevices);
 	
-free_device_list:	
+
+	goto wind_down;	
+	
+wind_down:	
+	//returnValue = deallocateProtectionDomains(&pds, numDevices);
+	returnValue = closeDevices(&contexts, numDevices);
 	ibv_free_device_list(deviceList);
 
 	return returnValue; // exit is a system call... just return cleanly...
@@ -85,26 +99,38 @@ int printIBDevicesList(struct ibv_device **deviceList, int numDevices) {
 
 int openDevices(struct ibv_device **deviceList, int numDevices, struct ibv_context ***contexts) {
 
-	*contexts = malloc(numDevices * sizeof(struct ibv_device *));
+	*contexts = (struct ibv_context **) malloc(numDevices * sizeof(struct ibv_context *));
 
 	for (int i = 0; i < numDevices; i++) {
-		struct ibv_device * device = deviceList[i];
-		struct ibv_context *context = ibv_open_device(device);
+		(*contexts)[i] = ibv_open_device(deviceList[i]);
+			//(struct ibv_context *) malloc(sizeof(struct ibv_context));
 
-		if (!context) {
+		if (!(*contexts)[i]) {
 			fprintf(stderr, "Context not found for device %s", 
-					ibv_get_device_name(device));
+					ibv_get_device_name(deviceList[i]));
 			if(!DBG) {
 				exit(EXIT_FAILURE); // Exit
 			}
 		}
-		(*contexts)[i] = context;
+		
+	}
+	return 0;
+}
+
+int closeDevices(struct ibv_context ***contexts, int numDevices) {
+
+	for (int i = 0; i < numDevices; i++) {
+		//assert(*contexts[i] != NULL);
+		int returnValue = ibv_close_device((*contexts)[i]);
+		if(returnValue){
+			return returnValue;
+		}
 	}
 	return 0;
 }
 
 int getDeviceAttributes(struct ibv_device **deviceList, int numDevices, 
-		struct ibv_context **contexts){
+		struct ibv_context **contexts) {
 
 	for (int i = 0; i < numDevices; i++) {
 		struct ibv_device_attr deviceAttr;
@@ -114,4 +140,29 @@ int getDeviceAttributes(struct ibv_device **deviceList, int numDevices,
 	// reference to a pointer that it can stick a created object on
 	return 0;
 }
+
+int allocateProtectionDomains(struct ibv_context **contexts, struct ibv_pd ***pds, int numDevices ) {
+
+	*pds = malloc(numDevices * sizeof(struct ibv_pd *));
+	for (int i = 0; i < numDevices; i++) {
+		(*pds)[i] = ibv_alloc_pd(contexts[i]);
+		if (!(*pds)[i]) {
+			fprintf(stderr, "Error, ibv_alloc_pd() failed\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int deallocateProtectionDomains(struct ibv_pd ***pds, int numDevices) {
+
+	for (int i = 0; i < numDevices; i++) {
+		if (ibv_dealloc_pd((*pds)[i])) {
+			fprintf(stderr, "Error, ibv_dealloc_pd() failed\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
 
