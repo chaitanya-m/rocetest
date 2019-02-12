@@ -27,13 +27,18 @@ int allocateProtectionDomains(struct ibv_context **contexts, struct ibv_pd ***pd
 
 int deallocateProtectionDomains(struct ibv_pd ***pds, int numDevices);
 
+int registerMemoryRegions(struct ibv_mr ***mrs, struct ibv_pd **pds, int numDevices);
+
+int deregisterMemoryRegions(struct ibv_mr ***mrs, int numDevices);
+
 int main (int argc, char *argv[]) {
 
 	int numDevices = 0, returnValue = 0;
 	struct ibv_device **deviceList = NULL; 
 	struct ibv_context **contexts = NULL;
 	struct ibv_pd **pds = NULL;
-	
+	struct ibv_mr **mrs = NULL;
+
 	// Ensure devices returned safely
 	returnValue = findIBDevices(&deviceList, &numDevices);
 	// Print list of devices
@@ -44,14 +49,16 @@ int main (int argc, char *argv[]) {
 	returnValue = getDeviceAttributes(deviceList, numDevices, contexts);
 	// Allocate Protection Domain - so resources don't overlap 
 	returnValue = allocateProtectionDomains(contexts, &pds, numDevices);
-	// Deallocate Protection Domains 
-	returnValue = deallocateProtectionDomains(&pds, numDevices);
-	
+
+	returnValue = registerMemoryRegions(&mrs, pds, numDevices);
+
+
 
 	goto wind_down;	
 	
 wind_down:	
-	//returnValue = deallocateProtectionDomains(&pds, numDevices);
+	returnValue = deregisterMemoryRegions(&mrs, numDevices);
+	returnValue = deallocateProtectionDomains(&pds, numDevices);
 	returnValue = closeDevices(&contexts, numDevices);
 	ibv_free_device_list(deviceList);
 
@@ -165,4 +172,34 @@ int deallocateProtectionDomains(struct ibv_pd ***pds, int numDevices) {
 	return 0;
 }
 
+int registerMemoryRegions(struct ibv_mr ***mrs, struct ibv_pd **pds, int numDevices){
+
+#define REGION_SIZE 0x1800
+
+	*mrs = malloc(numDevices * sizeof(struct ibv_mr *));
+	for (int i = 0; i < numDevices; i++) {
+        	char* mr_buffer = malloc(REGION_SIZE);
+		(*mrs)[i] = ibv_reg_mr(pds[i], mr_buffer, REGION_SIZE, 
+				IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE 
+				| IBV_ACCESS_REMOTE_READ);
+		if (!(*mrs)[i]) {
+			fprintf(stderr, "Error, ibv_reg_mr() failed\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int deregisterMemoryRegions(struct ibv_mr ***mrs, int numDevices){
+
+#define REGION_SIZE 0x1800
+
+	for (int i = 0; i < numDevices; i++) {
+		if (ibv_dereg_mr((*mrs)[i])) {
+			fprintf(stderr, "Error, ibv_dereg_mr() failed\n");
+			return -1;
+		}
+	}
+	return 0;
+}
 
