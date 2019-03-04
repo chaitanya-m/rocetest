@@ -13,6 +13,7 @@
 #include <malloc.h>
 #include <getopt.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <time.h>
 #include <infiniband/verbs.h>
 
@@ -30,7 +31,7 @@ static void usage(const char *argv0)
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
 	int   dev_port = 1;
-	int handshake_port = 2;
+	int handshake_port = -1;
 	int num_devices;
 
 
@@ -77,28 +78,57 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-/*
- * 	// http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
+////////////////////////////////////////////////////////////
+// http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
+
+     int sockfd, newsockfd, clilen, pid;
+     struct sockaddr_in serv_addr, cli_addr;
+
+     if (handshake_port < 0) {
+         fprintf(stderr,"ERROR, no port provided\n");
+         exit(1);
+     }
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        fprintf(stderr, "ERROR opening socket\n");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(handshake_port);
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0) 
+              fprintf(stderr,"ERROR on binding\n");
+     listen(sockfd,5);
+     clilen = sizeof(cli_addr);
+
         while (1) {
-        	newsockfd = accept(sockfd, 
-				(struct sockaddr *) &cli_addr, &clilen);
+             	fprintf(stdout, "Entering infinite while loop\n");
+        	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
          	if (newsockfd < 0) 
-             		error("ERROR on accept");
+             		fprintf(stderr, "ERROR on accept\n");
+             	fprintf(stdout, "About to fork process\n");
          	pid = fork();
-         	if (pid < 0)
-             		error("ERROR on fork");
+         	if (pid > 0 || pid < 0 || pid == 0){
+             		fprintf(stderr, "ERROR on fork\n");
+		}
          	if (pid == 0)  {// in child process
              		close(sockfd);
-             		dostuff(newsockfd);
+             		//dostuff(newsockfd);
              		//exit(0);
-			continue; 
+			//goto rdma_socket;
+			break; 
 			// We want the child process to handle data transfer and terminate
          	}
-         	else close(newsockfd);
+         	else {
+			fprintf(stdout, "Looping back again! Parent process. \n");
+			close(newsockfd);
+		}
+		//continue;
      	} // end of while
-*/
 
-
+///////////////////////////////////////////////////////////
+rdma_socket:
+	fprintf(stderr, "HERE!. \n");
 
 	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
 	if (!dev_list) {
