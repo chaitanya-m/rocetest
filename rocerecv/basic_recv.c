@@ -16,8 +16,6 @@
 #include <time.h>
 #include <infiniband/verbs.h>
 
-
-
 static void usage(const char *argv0)
 {
 	printf("Usage:\n");
@@ -174,7 +172,7 @@ int main(int argc, char *argv[]) {
 	int ne;
 
 
-	fprintf(stderr, "Listinig on QP Number 0x%06x\n", qp->qp_num);
+	fprintf(stderr, "Listening on QP Number 0x%06x\n", qp->qp_num);
 	sleep(1);
 
 #define MAX_MSG_SIZE 0x100
@@ -239,9 +237,4 @@ free_dev_list:
 
 	return 0;
 }
-
-
-
-
-
 
