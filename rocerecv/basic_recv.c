@@ -77,6 +77,28 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+/*
+ * 	// http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
+        while (1) {
+        	newsockfd = accept(sockfd, 
+				(struct sockaddr *) &cli_addr, &clilen);
+         	if (newsockfd < 0) 
+             		error("ERROR on accept");
+         	pid = fork();
+         	if (pid < 0)
+             		error("ERROR on fork");
+         	if (pid == 0)  {// in child process
+             		close(sockfd);
+             		dostuff(newsockfd);
+             		//exit(0);
+			continue; 
+			// We want the child process to handle data transfer and terminate
+         	}
+         	else close(newsockfd);
+     	} // end of while
+*/
+
+
 
 	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
 	if (!dev_list) {
@@ -193,18 +215,10 @@ int main(int argc, char *argv[]) {
 	for (i = 0; i < 4; i++) {
 		list.addr   = (uint64_t)(mr_buffer + MAX_MSG_SIZE*i);
 		list.length = MAX_MSG_SIZE;
-		list.lkey   = mr->lkey;
-
 
 		wr.wr_id      = i;
 		wr.sg_list    = &list;
-		wr.num_sge    = 1;
-		wr.next       = NULL;
-
-		if (ibv_post_recv(qp,&wr,&bad_wr)) {
-			fprintf(stderr, "Function ibv_post_recv failed\n");
-			return 1;
-		}
+		
 	}
 
 	i = 0;
