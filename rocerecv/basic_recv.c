@@ -30,6 +30,7 @@ static void usage(const char *argv0)
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
 	int   dev_port = 1;
+	int handshake_port = 2;
 	int num_devices;
 
 
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
 	while (1) {
 		int c;
 
-		c = getopt_long(argc, argv, "p:d:i:g:q:l:",
+		c = getopt_long(argc, argv, "p:d:h:i:g:q:l:",
 				long_options, NULL);
 		if (c == -1)
 			break;
@@ -50,15 +51,26 @@ int main(int argc, char *argv[]) {
 		switch (c) {
 		case 'd':
 			devname = strdup(optarg);
+			fprintf(stderr, "devname is: %s\n",devname);
 			break;
 
 		case 'i':
 			dev_port = strtol(optarg, NULL, 0);
+			printf("dev_port is : %d\n", dev_port);
 			if (dev_port < 0) {
 				usage(argv[0]);
 				return 1;
 			}
 			break;
+		case 'h':
+			handshake_port = strtol(optarg, NULL, 0);
+			printf("handshake port is: %d\n", handshake_port);
+			if (handshake_port < 0) {
+				usage(argv[0]);
+				return 1;
+			}
+			break;
+
 		default:
 			usage(argv[0]);
 			return 1;
