@@ -108,33 +108,6 @@ int main(int argc, char *argv[]) {
 	}
 
 
-	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
-	if (!dev_list) {
-		perror("Failed to get RDMA devices list");
-		return 1;
-	}
-
-	int i;
-	for (i = 0; i < num_devices; ++i)
-		if (!strcmp(ibv_get_device_name(dev_list[i]), devname))
-			break;
-
-	if (i == num_devices) {
-		fprintf(stderr, "RDMA device %s not found\n", devname);
-		goto  free_dev_list;
-	}
-
-	struct ibv_device *device  = dev_list[i];
-
-	struct ibv_context *context = ibv_open_device(device);
-	if (!context) {
-		fprintf(stderr, "Couldn't get context for %s\n",
-				ibv_get_device_name(device));
-		goto free_dev_list;
-	}
-
-
-
 
 ////////////////////////////////////////////////////////////
 // http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
@@ -182,6 +155,35 @@ int main(int argc, char *argv[]) {
      	} // end of while
 
 ///////////////////////////////////////////////////////////
+
+
+	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
+	if (!dev_list) {
+		perror("Failed to get RDMA devices list");
+		return 1;
+	}
+
+	int i;
+	for (i = 0; i < num_devices; ++i)
+		if (!strcmp(ibv_get_device_name(dev_list[i]), devname))
+			break;
+
+	if (i == num_devices) {
+		fprintf(stderr, "RDMA device %s not found\n", devname);
+		goto  free_dev_list;
+	}
+
+	struct ibv_device *device  = dev_list[i];
+
+	struct ibv_context *context = ibv_open_device(device);
+	if (!context) {
+		fprintf(stderr, "Couldn't get context for %s\n",
+				ibv_get_device_name(device));
+		goto free_dev_list;
+	}
+
+
+
 
 
 	struct ibv_pd *pd = ibv_alloc_pd(context);
