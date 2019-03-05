@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
     n = read(sockfd,buffer,255);
     if (n < 0) 
          fprintf(stderr,"ERROR reading from socket");
-    //dest_gid_str = strdup(buffer);
+    dest_gid_str = strdup(buffer);
     fprintf(stdout,"%s\n",dest_gid_str);
 
     sleep(2);
