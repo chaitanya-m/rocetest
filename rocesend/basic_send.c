@@ -74,9 +74,9 @@ static int parse_gid(char *gid_str, union ibv_gid *gid) {
 
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
-	char *host_name = NULL; 
 	int   dev_port = 1;
-	int handshake_port = 19222;
+	int handshake_port = 19000;
+	char *host_name = NULL; 
 	int num_devices;
 	char *dest_gid_str;
 	int   dest_lid = 0;
