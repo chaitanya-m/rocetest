@@ -74,9 +74,9 @@ static int parse_gid(char *gid_str, union ibv_gid *gid) {
 
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
-	char *host_name = NULL; 
 	int   dev_port = 1;
-	int handshake_port = 19222;
+//	int handshake_port = 19222;
+//	char *host_name = NULL; 
 	int num_devices;
 	char *dest_gid_str;
 	int   dest_lid = 0;
@@ -113,18 +113,18 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 
-		case 'h':
-			handshake_port = strtol(optarg, NULL, 0);
-			if (handshake_port < 0) {
-				usage(argv[0]);
-				return 1;
-			}
-			break;
-
-		case 's':
-			host_name = strdup(optarg);
-			break;
-
+//		case 'h':
+//			handshake_port = strtol(optarg, NULL, 0);
+//			if (handshake_port < 0) {
+//				usage(argv[0]);
+//				return 1;
+//			}
+//			break;
+//
+//		case 's':
+//			host_name = strdup(optarg);
+//			break;
+//
 		case 'g':
 			dest_gid_str = strdup(optarg);
 			break;
@@ -151,62 +151,62 @@ int main(int argc, char *argv[]) {
 	}
 
 ///////////////////////////////////////////////////////////////////////////////////////
-
-    int sockfd, n;
-
-    struct sockaddr_in serv_addr;
-    struct sockaddr_in serv_loc;
-    struct hostent *server;
-
-    char buffer[256] =     "Requesting gid and QP number" ;
-    /*if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
-    }*/
-    //handshake_port = atoi(argv[2]);
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    serv_loc.sin_family = AF_INET;
-    serv_loc.sin_port = htons(handshake_port);
-    //sa_loc.sin_addr.s_addr = inet_addr(LOCAL_IP_ADDRESS);
-    if (sockfd < 0) 
-        fprintf(stderr, "ERROR opening socket");
-    int ret = bind(sockfd, (struct sockaddr *)&serv_loc, sizeof(struct sockaddr));
-    assert(ret != -1);
-
-    server = gethostbyname(host_name);
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
-         (char *)&serv_addr.sin_addr.s_addr,
-         server->h_length);
-    serv_addr.sin_port = htons(handshake_port);
-    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
-        fprintf(stderr, "ERROR connecting");
-
-    fprintf(stdout, "%s\n",buffer);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0) 
-         fprintf(stderr, "ERROR writing to socket");
-//////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////    
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0) 
-         fprintf(stderr,"ERROR reading from socket");
-    dest_gid_str = strdup(buffer);
-    fprintf(stdout,"%s\n",dest_gid_str);
-
-    sleep(2);
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0) 
-         fprintf(stderr,"ERROR reading from socket");
-    dest_qpn = strtol(buffer, NULL, 0);
-    fprintf(stdout,"0x%06x\n",dest_qpn);
+//
+//    int sockfd, n;
+//
+//    struct sockaddr_in serv_addr;
+//    struct sockaddr_in serv_loc;
+//    struct hostent *server;
+//
+//    char buffer[256] =     "Requesting gid and QP number" ;
+//    /*if (argc < 3) {
+//       fprintf(stderr,"usage %s hostname port\n", argv[0]);
+//       exit(0);
+//    }*/
+//    //handshake_port = atoi(argv[2]);
+//    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+//    serv_loc.sin_family = AF_INET;
+//    serv_loc.sin_port = htons(handshake_port);
+//    //sa_loc.sin_addr.s_addr = inet_addr(LOCAL_IP_ADDRESS);
+//    if (sockfd < 0) 
+//        fprintf(stderr, "ERROR opening socket");
+//    int ret = bind(sockfd, (struct sockaddr *)&serv_loc, sizeof(struct sockaddr));
+//    assert(ret != -1);
+//
+//    server = gethostbyname(host_name);
+//    if (server == NULL) {
+//        fprintf(stderr,"ERROR, no such host\n");
+//        exit(0);
+//    }
+//    bzero((char *) &serv_addr, sizeof(serv_addr));
+//    serv_addr.sin_family = AF_INET;
+//    bcopy((char *)server->h_addr, 
+//         (char *)&serv_addr.sin_addr.s_addr,
+//         server->h_length);
+//    serv_addr.sin_port = htons(handshake_port);
+//    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
+//        fprintf(stderr, "ERROR connecting");
+//
+//    fprintf(stdout, "%s\n",buffer);
+//    n = write(sockfd,buffer,strlen(buffer));
+//    if (n < 0) 
+//         fprintf(stderr, "ERROR writing to socket");
+////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////    
+//    bzero(buffer,256);
+//    n = read(sockfd,buffer,255);
+//    if (n < 0) 
+//         fprintf(stderr,"ERROR reading from socket");
+//    dest_gid_str = strdup(buffer);
+//    fprintf(stdout,"%s\n",dest_gid_str);
+//
+//    sleep(2);
+//    bzero(buffer,256);
+//    n = read(sockfd,buffer,255);
+//    if (n < 0) 
+//         fprintf(stderr,"ERROR reading from socket");
+//    dest_qpn = strtol(buffer, NULL, 0);
+//    fprintf(stdout,"0x%06x\n",dest_qpn);
 //////////////////////////////////////////////////////////////////////////////////////
 
 	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
