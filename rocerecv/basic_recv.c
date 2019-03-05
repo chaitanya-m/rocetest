@@ -16,6 +16,8 @@
 #include <time.h>
 #include <infiniband/verbs.h>
 
+#define BUFLEN 256
+
 static void usage(const char *argv0)
 {
 	printf("Usage:\n");
@@ -26,12 +28,40 @@ static void usage(const char *argv0)
 	printf("  -i, --dev_port=<port>  use port <port> of device (default 1)\n");
 }
 
+void sendGid (int sock, char* device)
+{
+   uint8_t port = 1; // Assumed to always be 1 for now, refactor later
+   int index = 0; // So obtained GID is Default port GUID
+
+   int n;
+   char buffer[BUFLEN];
+
+   bzero(buffer,BUFLEN);
+   n = read(sock,buffer,BUFLEN-1);
+   if (n < 0) fprintf(stderr, "ERROR reading from socket");
+   fprintf(stdout, "Message from client: %s\n",buffer);
+   char gidFile[BUFLEN];
+   int ret = snprintf(gidFile, BUFLEN, "/sys/class/infiniband/%s/ports/%d/gids/0",
+                   device, port);
+   fprintf(stdout, "%s\n", gidFile);
+
+   FILE *fp;
+   bzero(buffer,BUFLEN);
+   fp = fopen(gidFile, "r");
+   fscanf(fp, "%s", buffer);
+   fprintf(stdout, "%s\n", buffer);
+
+   n = write(sock, buffer, BUFLEN-1);
+   if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+}
+
+
 
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
 	int   dev_port = 1;
+        int handshake_port = -1;
 	int num_devices;
-
 
 	static struct option long_options[] = {
 		{ .name = "dev-name",  .has_arg = 1, .val = 'd' },
@@ -42,7 +72,7 @@ int main(int argc, char *argv[]) {
 	while (1) {
 		int c;
 
-		c = getopt_long(argc, argv, "p:d:i:g:q:l:",
+		c = getopt_long(argc, argv, "p:d:h:i:g:q:l:",
 				long_options, NULL);
 		if (c == -1)
 			break;
@@ -59,12 +89,66 @@ int main(int argc, char *argv[]) {
 				return 1;
 			}
 			break;
+
+                case 'h':
+                        handshake_port = strtol(optarg, NULL, 0);
+                        printf("handshake port is: %d\n", handshake_port);
+                        if (handshake_port < 0) {
+                                usage(argv[0]);
+                                return 1;
+                        }
+                        break;
+
 		default:
 			usage(argv[0]);
 			return 1;
 		}
 	}
 
+////////////////////////////////////////////////////////////
+// http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
+
+     int sockfd, newsockfd, clilen, pid;
+     struct sockaddr_in serv_addr, cli_addr;
+
+     if (handshake_port < 0) {
+         fprintf(stderr,"ERROR, no port provided\n");
+         exit(1);
+     }
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0)
+        fprintf(stderr, "ERROR opening socket\n");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(handshake_port);
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0)
+              fprintf(stderr,"ERROR on binding\n");
+     listen(sockfd,5);
+     clilen = sizeof(cli_addr);
+
+        while (1) {
+                fprintf(stdout, "Entering infinite while loop\n");
+                newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+                if (newsockfd < 0)
+                        fprintf(stderr, "ERROR on accept\n");
+                fprintf(stdout, "About to fork process\n");
+                pid = fork();
+                if (pid == 0)  {// in child process
+                        close(sockfd);
+                        sendGid(newsockfd, devname);
+                        break;
+                        // We want the child process to handle data transfer and terminate
+                }
+                else {
+                        fprintf(stdout, "Looping back again! Parent process. \n");
+                        close(newsockfd);
+                }
+                //continue;
+        } // end of while
+
+///////////////////////////////////////////////////////////
 
 	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
 	if (!dev_list) {
@@ -158,6 +242,15 @@ int main(int argc, char *argv[]) {
 
 
 	qp_modify_attr.qp_state		= IBV_QPS_RTR;
+
+/////////////////////////////////////////////////////////////////////////
+      // Now let's send the queue pair number
+      char buffer[BUFLEN];
+      snprintf(buffer,255, "0x%06x", qp->qp_num);
+      int n = write(newsockfd, buffer, BUFLEN-1);
+        if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+/////////////////////////////////////////////////////////////////////////
+
 
 	if (ibv_modify_qp(qp, &qp_modify_attr, IBV_QP_STATE)) {
 		fprintf(stderr, "Failed to modify QP to RTR\n");
