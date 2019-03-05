@@ -17,6 +17,8 @@
 #include <time.h>
 #include <infiniband/verbs.h>
 
+#define BUFLEN 256
+
 static void usage(const char *argv0)
 {
 	printf("Usage:\n");
@@ -27,33 +29,36 @@ static void usage(const char *argv0)
 	printf("  -i, --dev_port=<port>  use port <port> of device (default 1)\n");
 }
 
-void sendGid (int sock, struct ibv_context *context)
+void sendGid (int sock, char* device)
 {
-
-   uint8_t port_num = 1; // Assumed to always be 1 for now, refactor later
+   uint8_t port = 1; // Assumed to always be 1 for now, refactor later
    int index = 0; // So obtained GID is Default port GUID 
-   union ibv_gid *gid;
 
    int n;
-   char buffer[256];
+   char buffer[BUFLEN];
       
-   bzero(buffer,256);
-   n = read(sock,buffer,255);
+   bzero(buffer,BUFLEN);
+   n = read(sock,buffer,BUFLEN-1);
    if (n < 0) fprintf(stderr, "ERROR reading from socket");
    fprintf(stdout, "Message from client: %s\n",buffer);
-   //char gidFile[200];
-   //int ret = snprintf(gidFile, 200, "/sys/class/infiniband/%s/ports/%d/gids/0", 
-//		   device, port);
-   //fprintf(stdout, "%s\n", gidFile);
-   //int rc = ibv_query_gid(context, port_num, index, gid); 
+   char gidFile[BUFLEN];
+   int ret = snprintf(gidFile, BUFLEN, "/sys/class/infiniband/%s/ports/%d/gids/0", 
+		   device, port);
+   fprintf(stdout, "%s\n", gidFile);
+
+   FILE *fp;
+   bzero(buffer,BUFLEN);
+   fp = fopen(gidFile, "r");
+   fscanf(fp, "%s", buffer);
+   fprintf(stdout, "%s\n", buffer);
 
 //if (rc) {
 //fprintf(stderr, "Error obtaining GID\n"); 
 //}
 
 
-   strcpy(buffer, "blah");
-   n = write(sock, buffer ,18);
+   //strcpy(buffer, "blah");
+   n = write(sock, buffer, BUFLEN-1);
    if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
 }
 
@@ -141,9 +146,7 @@ int main(int argc, char *argv[]) {
          	pid = fork();
          	if (pid == 0)  {// in child process
              		close(sockfd);
-             		//sendGid(newsockfd, context);
-             		//exit(0);
-			//goto rdma_socket;
+             		sendGid(newsockfd, devname);
 			break; 
 			// We want the child process to handle data transfer and terminate
          	}
@@ -181,10 +184,6 @@ int main(int argc, char *argv[]) {
 				ibv_get_device_name(device));
 		goto free_dev_list;
 	}
-
-
-
-
 
 	struct ibv_pd *pd = ibv_alloc_pd(context);
 	if (!pd) {
@@ -251,7 +250,6 @@ int main(int argc, char *argv[]) {
 		goto free_qp;
 	}
 
-
 	qp_modify_attr.qp_state		= IBV_QPS_RTR;
 
 	if (ibv_modify_qp(qp, &qp_modify_attr, IBV_QP_STATE)) {
@@ -266,8 +264,14 @@ int main(int argc, char *argv[]) {
 	struct ibv_wc wc;
 	int ne;
 
-
 	fprintf(stderr, "Listening on QP Number 0x%06x\n", qp->qp_num);
+
+	// Now let's send the queue pair number
+	char buffer[BUFLEN];
+	snprintf(buffer,255, "0x%06x", qp->qp_num);
+	int n = write(newsockfd, buffer, BUFLEN-1);
+        if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+
 	sleep(1);
 
 #define MAX_MSG_SIZE 0x100
