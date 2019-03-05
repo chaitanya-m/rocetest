@@ -65,7 +65,7 @@ void sendGid (int sock, char* device)
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
 	int   dev_port = 1;
-	int handshake_port = -1;
+//	int handshake_port = -1;
 	int num_devices;
 
 
@@ -97,15 +97,15 @@ int main(int argc, char *argv[]) {
 				return 1;
 			}
 			break;
-		case 'h':
-			handshake_port = strtol(optarg, NULL, 0);
-			printf("handshake port is: %d\n", handshake_port);
-			if (handshake_port < 0) {
-				usage(argv[0]);
-				return 1;
-			}
-			break;
-
+//		case 'h':
+//			handshake_port = strtol(optarg, NULL, 0);
+//			printf("handshake port is: %d\n", handshake_port);
+//			if (handshake_port < 0) {
+//				usage(argv[0]);
+//				return 1;
+//			}
+//			break;
+//
 		default:
 			usage(argv[0]);
 			return 1;
@@ -116,47 +116,47 @@ int main(int argc, char *argv[]) {
 
 ////////////////////////////////////////////////////////////
 // http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
-
-     int sockfd, newsockfd, clilen, pid;
-     struct sockaddr_in serv_addr, cli_addr;
-
-     if (handshake_port < 0) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         exit(1);
-     }
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0) 
-        fprintf(stderr, "ERROR opening socket\n");
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(handshake_port);
-     if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0) 
-              fprintf(stderr,"ERROR on binding\n");
-     listen(sockfd,5);
-     clilen = sizeof(cli_addr);
-
-        while (1) {
-             	fprintf(stdout, "Entering infinite while loop\n");
-        	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-         	if (newsockfd < 0) 
-             		fprintf(stderr, "ERROR on accept\n");
-             	fprintf(stdout, "About to fork process\n");
-         	pid = fork();
-         	if (pid == 0)  {// in child process
-             		close(sockfd);
-             		sendGid(newsockfd, devname);
-			break; 
-			// We want the child process to handle data transfer and terminate
-         	}
-         	else {
-			fprintf(stdout, "Looping back again! Parent process. \n");
-			close(newsockfd);
-		}
-		//continue;
-     	} // end of while
-
+//
+//     int sockfd, newsockfd, clilen, pid;
+//     struct sockaddr_in serv_addr, cli_addr;
+//
+//     if (handshake_port < 0) {
+//         fprintf(stderr,"ERROR, no port provided\n");
+//         exit(1);
+//     }
+//     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+//     if (sockfd < 0) 
+//        fprintf(stderr, "ERROR opening socket\n");
+//     bzero((char *) &serv_addr, sizeof(serv_addr));
+//     serv_addr.sin_family = AF_INET;
+//     serv_addr.sin_addr.s_addr = INADDR_ANY;
+//     serv_addr.sin_port = htons(handshake_port);
+//     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+//              sizeof(serv_addr)) < 0) 
+//              fprintf(stderr,"ERROR on binding\n");
+//     listen(sockfd,5);
+//     clilen = sizeof(cli_addr);
+//
+//        while (1) {
+//             	fprintf(stdout, "Entering infinite while loop\n");
+//        	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+//         	if (newsockfd < 0) 
+//             		fprintf(stderr, "ERROR on accept\n");
+//             	fprintf(stdout, "About to fork process\n");
+//         	pid = fork();
+//         	if (pid == 0)  {// in child process
+//             		close(sockfd);
+//             		sendGid(newsockfd, devname);
+//			break; 
+//			// We want the child process to handle data transfer and terminate
+//         	}
+//         	else {
+//			fprintf(stdout, "Looping back again! Parent process. \n");
+//			close(newsockfd);
+//		}
+//		//continue;
+//     	} // end of while
+//
 ///////////////////////////////////////////////////////////
 
 
@@ -266,11 +266,13 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "Listening on QP Number 0x%06x\n", qp->qp_num);
 
-	// Now let's send the queue pair number
-	char buffer[BUFLEN];
-	snprintf(buffer,255, "0x%06x", qp->qp_num);
-	int n = write(newsockfd, buffer, BUFLEN-1);
-        if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+/////////////////////////////////////////////////////////////////////////
+//	// Now let's send the queue pair number
+//	char buffer[BUFLEN];
+//	snprintf(buffer,255, "0x%06x", qp->qp_num);
+//	int n = write(newsockfd, buffer, BUFLEN-1);
+//        if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+/////////////////////////////////////////////////////////////////////////
 
 	sleep(1);
 
