@@ -27,6 +27,35 @@ static void usage(const char *argv0)
 	printf("  -i, --dev_port=<port>  use port <port> of device (default 1)\n");
 }
 
+void sendGid (int sock, struct ibv_context *context)
+{
+
+   uint8_t port_num = 1; // Assumed to always be 1 for now, refactor later
+   int index = 0; // So obtained GID is Default port GUID 
+   union ibv_gid *gid;
+
+   int n;
+   char buffer[256];
+      
+   bzero(buffer,256);
+   n = read(sock,buffer,255);
+   if (n < 0) fprintf(stderr, "ERROR reading from socket");
+   fprintf(stdout, "Message from client: %s\n",buffer);
+   //char gidFile[200];
+   //int ret = snprintf(gidFile, 200, "/sys/class/infiniband/%s/ports/%d/gids/0", 
+//		   device, port);
+   //fprintf(stdout, "%s\n", gidFile);
+   //int rc = ibv_query_gid(context, port_num, index, gid); 
+
+//if (rc) {
+//fprintf(stderr, "Error obtaining GID\n"); 
+//}
+
+
+   strcpy(buffer, "blah");
+   n = write(sock, buffer ,18);
+   if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+}
 
 int main(int argc, char *argv[]) {
 	char *devname = NULL;
@@ -78,6 +107,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+
+
 ////////////////////////////////////////////////////////////
 // http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
 
@@ -108,12 +139,9 @@ int main(int argc, char *argv[]) {
              		fprintf(stderr, "ERROR on accept\n");
              	fprintf(stdout, "About to fork process\n");
          	pid = fork();
-         	if (pid > 0 || pid < 0 || pid == 0){
-             		fprintf(stderr, "ERROR on fork\n");
-		}
          	if (pid == 0)  {// in child process
              		close(sockfd);
-             		//dostuff(newsockfd);
+             		//sendGid(newsockfd, context);
              		//exit(0);
 			//goto rdma_socket;
 			break; 
@@ -127,8 +155,6 @@ int main(int argc, char *argv[]) {
      	} // end of while
 
 ///////////////////////////////////////////////////////////
-rdma_socket:
-	fprintf(stderr, "HERE!. \n");
 
 	struct ibv_device **dev_list = ibv_get_device_list(&num_devices);
 	if (!dev_list) {
@@ -154,6 +180,9 @@ rdma_socket:
 				ibv_get_device_name(device));
 		goto free_dev_list;
 	}
+
+
+
 
 	struct ibv_pd *pd = ibv_alloc_pd(context);
 	if (!pd) {
@@ -248,7 +277,6 @@ rdma_socket:
 
 		wr.wr_id      = i;
 		wr.sg_list    = &list;
-		
 	}
 
 	i = 0;
