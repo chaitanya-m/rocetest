@@ -240,8 +240,8 @@ int main(int argc, char *argv[]) {
 		goto close_device;
 	}
 
-#define REGION_SIZE 0x3600
-	char mr_buffer[REGION_SIZE];
+#define REGION_SIZE 0x14000000
+	char * mr_buffer = (char*)malloc(sizeof(char) * REGION_SIZE);
 
 	struct ibv_mr *mr = ibv_reg_mr(pd, mr_buffer, REGION_SIZE, 0);
 	if (!mr) {
