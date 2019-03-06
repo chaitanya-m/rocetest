@@ -3,7 +3,7 @@ import requests
 import subprocess
 
 bytesize = 1048576
-count = 100
+count = 1
 filename = "file1"
 filesize = bytesize * count
 

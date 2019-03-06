@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     serv_loc.sin_family = AF_INET;
     serv_loc.sin_port = htons(handshake_port);
-    //sa_loc.sin_addr.s_addr = inet_addr(LOCAL_IP_ADDRESS);
+    serv_loc.sin_addr.s_addr = inet_addr("118.138.254.134");//LOCAL_IP_ADDRESS);
     if (sockfd < 0) 
         fprintf(stderr, "ERROR opening socket");
     int ret = bind(sockfd, (struct sockaddr *)&serv_loc, sizeof(struct sockaddr));
@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) {
 		goto close_device;
 	}
 
-#define REGION_SIZE 0x1800
+#define REGION_SIZE 0x3600
 	char mr_buffer[REGION_SIZE];
 
 	struct ibv_mr *mr = ibv_reg_mr(pd, mr_buffer, REGION_SIZE, 0);
@@ -346,10 +346,22 @@ int main(int argc, char *argv[]) {
 	int ne;
 
 #define TEXT_MSG "Hello UD :)"
+	FILE *f = fopen("file1", "rb");
+	fseek(f, 0, SEEK_END);
+	long fsize = ftell(f);
+	rewind(f);
 
-	sprintf(mr_buffer, TEXT_MSG);
+//	//////char *string = malloc(fsize + 1);
+
+	//sprintf(mr_buffer, TEXT_MSG);
+	fread(mr_buffer, fsize, 1, f);
+	fclose(f);
+	mr_buffer[fsize] = 0;
+
 	list.addr   = (uint64_t)mr_buffer;
-	list.length = strlen(TEXT_MSG);
+	//list.length = strlen(TEXT_MSG);
+	list.length = fsize;
+	list.length = strlen(mr_buffer);
 	list.lkey   = mr->lkey;
 
 
