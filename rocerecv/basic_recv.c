@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 		goto close_pd;
 	}
 
-#define CQ_SIZE 0x100
+#define CQ_SIZE 0x20000
 
 	struct ibv_cq *cq = ibv_create_cq(context, CQ_SIZE, NULL,
 			NULL, 0);
@@ -200,9 +200,9 @@ int main(int argc, char *argv[]) {
 		goto free_mr;
 	}
 
-#define MAX_NUM_RECVS 0x10
-#define MAX_GATHER_ENTRIES 2
-#define MAX_SCATTER_ENTRIES 2
+#define MAX_NUM_RECVS 0x100
+#define MAX_GATHER_ENTRIES 20
+#define MAX_SCATTER_ENTRIES 20
 
 	struct ibv_qp_init_attr attr = {
 		.send_cq = cq,
@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Listening on QP Number 0x%06x\n", qp->qp_num);
 	sleep(1);
 
-#define MAX_MSG_SIZE 0x100
+#define MAX_MSG_SIZE 20000
 
 	while( 1 ) {
 	for (i = 0; i < 4; i++) {
