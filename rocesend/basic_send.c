@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
 	int ne;
 
 #define TEXT_MSG "Hello UD :)"
-	FILE *f = fopen("file1", "rb");
+	FILE *f = fopen("file2", "rb");
 	fseek(f, 0, SEEK_END);
 	long fsize = ftell(f);
 	rewind(f);
@@ -392,6 +392,14 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Bad completion (status %d)\n",(int)wc.status);
 		return 1;
 	}
+
+///////////////////////////////////////////////////////////
+    bzero(buffer,256);
+    n = read(sockfd,buffer,255);
+    if (n < 0) 
+         fprintf(stderr,"ERROR reading from socket");
+    fprintf(stdout,"%s\n",buffer);
+//////////////////////////////////////////////////////////
 
 free_qp:
 	ibv_destroy_qp(qp);
