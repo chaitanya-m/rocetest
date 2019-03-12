@@ -300,10 +300,21 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, "Bad completion (status %d)\n",(int)wc.status);
 			return 1;
 		} else {
-			printf("received: %s\n", mr_buffer + MAX_MSG_SIZE*i +
-					40);
-		}
+			FILE *out_file = fopen(
+					////"file2", "w"
+					 "/home/ubuntu/tardis_data/dataset1/file2","w"
+					);
+			fprintf(out_file, "%s", mr_buffer + MAX_MSG_SIZE*i + 40);
+			fclose(out_file);
+/////////////////////////////////////////////////////////////////////////
+      			// Now let's send completion status
+			bzero(buffer, BUFLEN);
+      			snprintf(buffer,255, "%s","File written" );
+      			int n = write(newsockfd, buffer, BUFLEN-1);
+        		if (n < 0) fprintf(stderr, "ERROR writing to socket\n");
+/////////////////////////////////////////////////////////////////////////
 
+	}
 		i++;
 	}
 	printf("Press enter to respost\n");
